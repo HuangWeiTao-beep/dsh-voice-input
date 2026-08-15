@@ -32,7 +32,7 @@
 
 ### 方式一：动态 Cordis 插件（当前形式）
 
-在 DSH 会话中把 [src/voice-input.client.js](src/voice-input.client.js) 的内容作为 `code.client` 提交：
+在 DSH 会话中把 [voice-input-plugin/src/voice-input.client.js](voice-input-plugin/src/voice-input.client.js) 的内容作为 `code.client` 提交：
 
 1. `cordis_define`（`kind: new`，idPrefix 如 `voic`）
 2. `cordis_run` 激活
@@ -45,10 +45,12 @@
 ## 🗂 目录结构
 
 ```
-voice-input-plugin/
-├── src/
-│   └── voice-input.client.js   # 插件完整客户端代码（v9）
-└── README.md
+dsh-voice-input/
+├── README.md
+├── LICENSE
+└── voice-input-plugin/
+    └── src/
+        └── voice-input.client.js   # 插件完整客户端代码（v9）
 ```
 
 ## 🤝 参与建设
