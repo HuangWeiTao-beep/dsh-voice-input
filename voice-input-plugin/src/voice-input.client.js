@@ -334,7 +334,13 @@ return {
         discardNext = true
         manualAbort = true
         restartAfterEnd = true
-        try { recognition.abort() } catch (e) { restartAfterEnd = false }
+        try { recognition.abort() } catch (e) {
+          // abort 抛异常 = 识别恰好已自然结束：复位全部标志，
+          // 避免下一次识别被误丢弃 / 意外重启 / 吞掉后续 abort 错误。
+          restartAfterEnd = false
+          discardNext = false
+          manualAbort = false
+        }
       }
     }
 
@@ -360,6 +366,10 @@ return {
         className: 'dyn-vi-mic',
         'data-listening': s.listening,
         disabled: !supported,
+        'aria-label': supported
+          ? (s.listening ? '停止语音输入' : '开始语音输入')
+          : '语音输入不可用（当前浏览器不支持语音识别）',
+        'aria-pressed': s.listening,
         title: supported
           ? (s.listening ? '点击停止语音输入（识别语言：' + langLabel() + '）' : '点击开始语音输入（识别语言：' + langLabel() + '）')
           : '当前浏览器不支持语音识别（请使用 Chrome / Edge）',
