@@ -1,6 +1,6 @@
 {
   "name": "dsh-voice-input",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "main": "index.mjs",
   "description": "DeepSeek Harness 语音输入插件：麦克风按钮 + Web Speech API 实时转写，支持 8 种语言",

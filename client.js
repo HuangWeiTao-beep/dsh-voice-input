@@ -95,29 +95,21 @@ window.__ModuleLoader__.load({
 
 /* 语言选择（幽灵胶囊） */
 .dyn-vi-lang {
-  height: 26px; max-width: 84px;
+  height: 26px; max-width: 140px;
   border: 1px solid transparent;
   border-radius: 999px;
   background: transparent;
   color: var(--dsw-alias-label-secondary);
   font-size: 12px; padding: 0 6px;
   cursor: pointer;
+  text-align: center;
   transition: border-color .18s ease, background .18s ease, color .18s ease;
 }
+.dyn-vi-lang option { text-align: center; }
 .dyn-vi-lang:hover {
   border-color: var(--dsw-alias-border-l1);
   background: var(--dsw-alias-bg-layer-1);
   color: var(--dsw-alias-label-primary);
-}
-
-/* 按钮旁的语言说明提示（短文案，完整说明在悬停提示里） */
-.dyn-vi-hint {
-  font-size: 11px;
-  line-height: 1;
-  color: var(--dsw-alias-label-secondary);
-  opacity: .8;
-  white-space: nowrap;
-  user-select: none;
 }
 
 .dyn-vi-mic:focus-visible, .dyn-vi-lang:focus-visible, .dyn-vi-stop:focus-visible {
@@ -400,12 +392,7 @@ window.__ModuleLoader__.load({
           title: "识别语言（会记住选择；选「自动」则始终跟随浏览器界面语言）",
           onChange: (e) => changeLang(e.target.value),
         }, opts);
-        // 短文案常驻；完整说明放在悬停提示里
-        const hint = React.createElement("span", {
-          className: "dyn-vi-hint",
-          title: "语音输入 · 默认语言与浏览器显示语言一致，可手动切换；选「自动」恢复跟随浏览器",
-        }, s.lang === AUTO_LANG ? "默认语言同浏览器" : "手动：" + langLabel());
-        return React.createElement("div", { className: "dyn-vi-row" }, mic, sel, hint);
+        return React.createElement("div", { className: "dyn-vi-row" }, mic, sel);
       };
 
       const VoiceStatusDock = (props) => {
