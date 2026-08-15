@@ -32,6 +32,7 @@ const LANGS = [
   ['ru-RU', 'Русский'],
   ['es-ES', 'Español'],
 ]
+const AUTO_LANG = 'auto' // 哨兵值：表示"跟随浏览器界面语言"，可被记住（localStorage）
 
 // 自动检测识别语言：跟随浏览器界面语言，并做智能映射（zh-TW → zh-CN、en-GB → en-US …）
 function detectLang() {
@@ -56,13 +57,13 @@ function detectLang() {
   return 'zh-CN'
 }
 
-// 读取上次手动选择的语言；没有则回退到浏览器语言自动检测
+// 读取上次的语言偏好：手动选择的语言或"自动"都会被记住；没有记录则默认跟随浏览器
 function loadSavedLang() {
   try {
     const saved = window.localStorage.getItem('dsh-voice-input-lang')
-    if (saved && LANGS.some((p) => p[0] === saved)) return saved
+    if (saved === AUTO_LANG || (saved && LANGS.some((p) => p[0] === saved))) return saved
   } catch (e) { /* ignore */ }
-  return detectLang()
+  return AUTO_LANG
 }
 
 const CSS = `
@@ -216,9 +217,15 @@ return {
       for (const fn of Array.from(listeners)) fn()
     }
     const langLabel = () => {
+      if (store.lang === AUTO_LANG) {
+        const p = LANGS.find((x) => x[0] === detectLang())
+        return p ? '自动（' + p[1] + '）' : '自动'
+      }
       const p = LANGS.find((x) => x[0] === store.lang)
       return p ? p[1] : store.lang
     }
+    // 实际送入 SpeechRecognition 的语言码："auto" 解析为浏览器当前语言
+    const resolveLang = () => (store.lang === AUTO_LANG ? detectLang() : store.lang)
 
     // ---- 识别器状态 ----
     let recognition = null
@@ -289,7 +296,14 @@ return {
       }
       rec.onend = () => {
         if (capTimer) { capTimer(); capTimer = null }
-        if (restartAfterEnd) { restartAfterEnd = false; startListening(); return }
+        if (restartAfterEnd) {
+          // 语言切换后的重启：清掉切换时留下的标志，新会话按正常流程提交结果
+          restartAfterEnd = false
+          discardNext = false
+          manualAbort = false
+          startListening()
+          return
+        }
         if (discardNext) { discardNext = false; manualAbort = false; failed = false; setStore({ listening: false, interim: '', final: '' }); return }
         manualAbort = false
         if (!failed) commitPending()
@@ -303,7 +317,7 @@ return {
     const startListening = () => {
       const rec = ensureRecognition()
       if (!rec) return
-      try { rec.lang = store.lang } catch (e) { /* ignore */ }
+      try { rec.lang = resolveLang() } catch (e) { /* ignore */ }
       try {
         rec.start()
       } catch (e) {
@@ -375,17 +389,19 @@ return {
           : '当前浏览器不支持语音识别（请使用 Chrome / Edge）',
         onClick: toggleListening,
       }, React.createElement('span', { className: 'dyn-vi-icon' }, React.createElement(MicIcon)))
+      const opts = [React.createElement('option', { key: AUTO_LANG, value: AUTO_LANG }, '自动（跟随浏览器）')]
+        .concat(LANGS.map((pair) => React.createElement('option', { key: pair[0], value: pair[0] }, pair[1])))
       const sel = React.createElement('select', {
         className: 'dyn-vi-lang',
         value: s.lang,
-        title: '识别语言（会记住选择）',
+        title: '识别语言（会记住选择；选「自动」则始终跟随浏览器界面语言）',
         onChange: (e) => changeLang(e.target.value),
-      }, LANGS.map((pair) => React.createElement('option', { key: pair[0], value: pair[0] }, pair[1])))
+      }, opts)
       // 短文案常驻；完整说明放在悬停提示里
       const hint = React.createElement('span', {
         className: 'dyn-vi-hint',
-        title: '语音输入 · 默认语言与浏览器显示语言一致，可手动切换',
-      }, '默认语言同浏览器')
+        title: '语音输入 · 默认语言与浏览器显示语言一致，可手动切换；选「自动」恢复跟随浏览器',
+      }, s.lang === AUTO_LANG ? '默认语言同浏览器' : '手动：' + langLabel())
       return React.createElement('div', { className: 'dyn-vi-row' }, mic, sel, hint)
     }
 
@@ -424,9 +440,24 @@ return {
         autoSend)
     }
 
+    // ---- 自动模式实时跟随浏览器语言（浏览器触发 languagechange 时无缝重启识别） ----
+    const onBrowserLangChange = () => {
+      if (store.lang !== AUTO_LANG || !store.listening || !recognition) return
+      discardNext = true
+      manualAbort = true
+      restartAfterEnd = true
+      try { recognition.abort() } catch (e) {
+        restartAfterEnd = false
+        discardNext = false
+        manualAbort = false
+      }
+    }
+    try { window.addEventListener('languagechange', onBrowserLangChange) } catch (e) { /* ignore */ }
+
     // ---- 生命周期 ----
     ctx.effect(() => styles.insert(CSS))
     ctx.effect(() => () => {
+      try { window.removeEventListener('languagechange', onBrowserLangChange) } catch (e) { /* ignore */ }
       if (capTimer) capTimer()
       if (recognition) {
         manualAbort = true
