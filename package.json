@@ -1,0 +1,33 @@
+{
+  "name": "dsh-voice-input",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.mjs",
+  "description": "DeepSeek Harness 语音输入插件：麦克风按钮 + Web Speech API 实时转写，支持 8 种语言",
+  "repository": "https://github.com/HuangWeiTao-beep/dsh-voice-input",
+  "exports": {
+    ".": "./index.mjs",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.mjs",
+    "client.js",
+    "install.mjs",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "client": {
+      "platform": "web"
+    }
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "voice-input",
+    "speech-recognition",
+    "web-plugin"
+  ],
+  "license": "MIT"
+}

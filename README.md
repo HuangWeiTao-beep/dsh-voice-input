@@ -22,35 +22,49 @@
 
 - **纯客户端实现**：浏览器 Web Speech API（`SpeechRecognition` / `webkitSpeechRecognition`），**无需后端服务、无需 API Key**
 - **要求 Chrome / Edge**（Firefox 不支持 Web Speech API）；本地访问（localhost/127.0.0.1）为安全上下文，可直接使用
-- 基于 DSH 动态 Cordis 插件机制：
-  - 按钮挂载于 Slot `conversation.input.left`（输入框工具行左侧）
-  - 状态条挂载于 Slot `conversation.input.dock`（输入卡上方）
+- 以 **DSH 正式 web 插件**（`dsh.client`）形式分发：
+  - 浏览器半边 `client.js`：标准 Cordis 插件，经 `exports["./client"]` 出货，由 `dsh.client` 清单声明发现（`platform: "web"`）
+  - node 半边 `index.mjs`：空 `apply`，只为让插件进入 host 的 cordis.yml 与 Loader
+  - 按钮挂载于 Slot `conversation.input.left`（输入框工具行左侧），状态条挂载于 `conversation.input.dock`（输入卡上方）
   - 通过官方标准接口 `inputActions.setDraft()` / `submit()` 写入输入框，与输入框状态机完全兼容
-  - 使用 `inject: ['timer']` 管理超时/自动清理，所有副作用随插件卸载自动回收
+  - 插件随 DSH 启动自动加载，重启不丢（区别于会话内临时的动态 Cordis 插件）
 
-## 📦 使用
+## 📦 安装
 
-### 方式一：动态 Cordis 插件（当前形式）
+### 方式一：正式 web 插件（推荐）
 
-在 DSH 会话中把 [voice-input-plugin/src/voice-input.client.js](voice-input-plugin/src/voice-input.client.js) 的内容作为 `code.client` 提交：
+要求：本机已初始化过 `dsh web`（存在 `$DSH_HOME/profiles/web/`）。
 
-1. `cordis_define`（`kind: new`，idPrefix 如 `voic`）
-2. `cordis_run` 激活
-3. 批准后，输入框工具行左侧出现麦克风按钮 🎤
+```bash
+# 克隆仓库
+git clone https://github.com/HuangWeiTao-beep/dsh-voice-input.git
+cd dsh-voice-input
 
-### 方式二：接入 `dsh.client` web 插件机制（正式分发）
+# 一键安装：复制插件 → 写入挂载行 → 校验
+node install.mjs
+```
 
-> 当前版本以动态插件形式运行（进程内临时加载）。如需作为可分发、可安装的正式插件，可在此基础上接入 DSH 的 `dsh.client` 客户端插件表机制（clientModules 服务增量扫描 + bundle 路由），欢迎贡献者实现并提交 PR。
+安装完成后，**刷新浏览器页面**（必要时重启 `dsh web`）即可在输入框工具行看到麦克风按钮。
+
+卸载：删除 `$DSH_HOME/profiles/web/node_modules/dsh-voice-input/`，并从 `$DSH_HOME/profiles/web/cordis.patch.yml` 中移除对应挂载行，重启 `dsh web`。
+
+### 方式二：动态 Cordis 插件（临时体验）
+
+在 DSH 会话中把 [voice-input-plugin/src/voice-input.client.js](voice-input-plugin/src/voice-input.client.js) 的内容作为 `code.client` 提交（`cordis_define` → `cordis_run`）。此方式仅当前会话有效，重启后消失，适合快速试用。
 
 ## 🗂 目录结构
 
 ```
 dsh-voice-input/
+├── package.json          # dsh.client 声明（platform: web）+ exports["./client"]
+├── client.js             # 浏览器半边：语音输入插件本体（bundle 格式）
+├── index.mjs             # node 半边：空 apply（让插件进入 host Loader）
+├── install.mjs           # 一键安装脚本
 ├── README.md
 ├── LICENSE
 └── voice-input-plugin/
     └── src/
-        └── voice-input.client.js   # 插件完整客户端代码（v9）
+        └── voice-input.client.js   # 动态 Cordis 插件版本（旧版，临时体验用）
 ```
 
 ## 🤝 参与建设
@@ -61,7 +75,7 @@ dsh-voice-input/
 - 🔧 提 **PR**：改进 UI 样式、优化识别逻辑、补充文档
 - 💬 讨论：多语言识别方案（Web Speech API 单会话单语言限制下的最佳实践）
 
-开发建议：在 DSH 会话中加载插件后，用浏览器的开发者工具检查控制台（插件日志带 `[cordis:插件ID]` 前缀）。
+开发建议：修改 `client.js` 后刷新页面即可看到效果（`dsh web` 的开发模式支持客户端插件热更新）；浏览器控制台里插件日志带 `dsh-voice-input` 标识。
 
 ## 📜 License
 
